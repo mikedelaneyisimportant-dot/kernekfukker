@@ -1,0 +1,37 @@
+diff --git a/.github/workflows/build-ksu-next.yml b/.github/workflows/build-ksu-next.yml
+index 48e4b16ec8d67eb400b935aa7433904e37c6581c..modified 100644
+--- a/.github/workflows/build-ksu-next.yml
++++ b/.github/workflows/build-ksu-next.yml
+@@ -452,6 +452,23 @@ jobs:
+           exit 1
+         fi
+ 
++    - name: Create boot.img
++      run: |
++        chmod +x "$GITHUB_WORKSPACE/scripts/mkbootimg.sh"
++        "$GITHUB_WORKSPACE/scripts/mkbootimg.sh" \
++          "$ANYKERNEL3/Image" \
++          "$ANYKERNEL3/boot.img" \
++          "$KERNEL_VER" \
++          "generic"
++        echo "BOOT_IMG_CREATED=true" >> "$GITHUB_ENV"
++
++    - name: Upload boot.img
++      if: env.BOOT_IMG_CREATED == 'true'
++      uses: actions/upload-artifact@v7
++      with:
++        name: ${{ env.FILE_NAME }}-boot.img
++        path: AnyKernel3/boot.img
++        if-no-files-found: error
++
+     - name: Scan Patch Rejects
+       if: always()
+       run: |
+@@ -520,6 +537,7 @@ jobs:
+           echo "| **Device Profile** | ${IDENTITY_STATUS:-Generic} |"
+           echo "| **Rejects** | ${REJ_COUNT:-0} |"
+           echo "| **Artifact** | ${FILE_NAME} |"
++          echo "| **boot.img** | $([ "$BOOT_IMG_CREATED" = "true" ] && echo "✓ Generated" || echo "✗ Skipped") |"
+         } >> "$GITHUB_STEP_SUMMARY"
+         REPORT="$GITHUB_WORKSPACE/$VERSION_DIR/build-helpers/report-config.sh"
+         [ -f "$REPORT" ] && bash "$REPORT" "$KERNEL_ROOT" "$ANDROID_VER" "$KERNEL_VER" || true

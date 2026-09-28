@@ -1,0 +1,420 @@
+name: "Dry Test Patches"
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      android_version:
+        description: "Android version"
+        type: choice
+        options: [android12, android13, android14, android15, android16]
+        default: "android12"
+      kernel_version:
+        description: "Kernel version"
+        type: choice
+        options: ["5.4", "5.10", "5.15", "6.1", "6.6", "6.12"]
+        default: "5.10"
+      mode:
+        description: "single = one sublevel, matrix = all sublevels"
+        type: choice
+        options: [single, matrix]
+        default: "single"
+      sub_level:
+        description: "Kernel sublevel (single mode only)"
+        type: string
+        default: "209"
+      os_patch_level:
+        description: "OS patch level (single mode only)"
+        type: string
+        default: "2024-05"
+      ksu_variant:
+        description: "KernelSU variant"
+        type: choice
+        options: [SukiSU, ReSukiSU, KernelSU-Next, WKSU]
+        default: "SukiSU"
+      sukisu_commit:
+        description: "SukiSU commit (empty = pinned default)"
+        type: string
+        default: ""
+  workflow_call:
+    inputs:
+      android_version:
+        type: string
+        required: true
+      kernel_version:
+        type: string
+        required: true
+      sub_level:
+        type: string
+        required: true
+      os_patch_level:
+        type: string
+        required: true
+      ksu_variant:
+        type: string
+        default: "SukiSU"
+      sukisu_commit:
+        type: string
+        default: ""
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.resolve.outputs.result }}
+    steps:
+    - id: resolve
+      env:
+        MODE: ${{ inputs.mode }}
+        ANDROID_VER: ${{ inputs.android_version }}
+        KERNEL_VER: ${{ inputs.kernel_version }}
+        SUB_LEVEL: ${{ inputs.sub_level }}
+        OS_PATCH: ${{ inputs.os_patch_level }}
+      run: |
+        if [ "$MODE" != "matrix" ]; then
+          echo "result=[{\"sub_level\":\"$SUB_LEVEL\",\"os_patch_level\":\"$OS_PATCH\"}]" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        case "${ANDROID_VER}-${KERNEL_VER}" in
+          android12-5.4)
+            echo 'result=[{"sub_level":"302","os_patch_level":"lts"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          android12-5.10)
+            echo 'result=[{"sub_level":"107","os_patch_level":"2022-11"},{"sub_level":"149","os_patch_level":"2023-01"},{"sub_level":"157","os_patch_level":"2023-03"},{"sub_level":"168","os_patch_level":"2023-05"},{"sub_level":"177","os_patch_level":"2023-07"},{"sub_level":"186","os_patch_level":"2023-09"},{"sub_level":"189","os_patch_level":"2023-11"},{"sub_level":"198","os_patch_level":"2024-01"},{"sub_level":"205","os_patch_level":"2024-03"},{"sub_level":"209","os_patch_level":"2024-05"},{"sub_level":"218","os_patch_level":"2024-08"},{"sub_level":"226","os_patch_level":"2024-11"},{"sub_level":"233","os_patch_level":"2025-02"},{"sub_level":"236","os_patch_level":"2025-05"},{"sub_level":"237","os_patch_level":"2025-06"},{"sub_level":"240","os_patch_level":"2025-09"},{"sub_level":"246","os_patch_level":"2025-12"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          android13-5.10)
+            echo 'result=[{"sub_level":"107","os_patch_level":"2022-11"},{"sub_level":"149","os_patch_level":"2023-01"},{"sub_level":"157","os_patch_level":"2023-03"},{"sub_level":"168","os_patch_level":"2023-05"},{"sub_level":"177","os_patch_level":"2023-07"},{"sub_level":"186","os_patch_level":"2023-09"},{"sub_level":"189","os_patch_level":"2023-11"},{"sub_level":"198","os_patch_level":"2024-01"},{"sub_level":"205","os_patch_level":"2024-03"},{"sub_level":"209","os_patch_level":"2024-05"},{"sub_level":"210","os_patch_level":"2024-06"},{"sub_level":"214","os_patch_level":"2024-07"},{"sub_level":"218","os_patch_level":"2024-08"},{"sub_level":"223","os_patch_level":"2024-11"},{"sub_level":"228","os_patch_level":"2025-01"},{"sub_level":"234","os_patch_level":"2025-03"},{"sub_level":"236","os_patch_level":"2025-05"},{"sub_level":"238","os_patch_level":"2025-07"},{"sub_level":"243","os_patch_level":"2025-10"},{"sub_level":"246","os_patch_level":"2026-01"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          android13-5.15)
+            echo 'result=[{"sub_level":"41","os_patch_level":"2022-11"},{"sub_level":"74","os_patch_level":"2023-01"},{"sub_level":"78","os_patch_level":"2023-03"},{"sub_level":"94","os_patch_level":"2023-05"},{"sub_level":"104","os_patch_level":"2023-07"},{"sub_level":"119","os_patch_level":"2023-09"},{"sub_level":"123","os_patch_level":"2023-11"},{"sub_level":"137","os_patch_level":"2024-01"},{"sub_level":"144","os_patch_level":"2024-03"},{"sub_level":"148","os_patch_level":"2024-05"},{"sub_level":"153","os_patch_level":"2024-09"},{"sub_level":"167","os_patch_level":"2024-11"},{"sub_level":"170","os_patch_level":"2025-01"},{"sub_level":"178","os_patch_level":"2025-03"},{"sub_level":"180","os_patch_level":"2025-05"},{"sub_level":"185","os_patch_level":"2025-07"},{"sub_level":"189","os_patch_level":"2025-09"},{"sub_level":"194","os_patch_level":"2025-12"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          android14-5.15)
+            echo 'result=[{"sub_level":"131","os_patch_level":"2023-11"},{"sub_level":"137","os_patch_level":"2024-01"},{"sub_level":"144","os_patch_level":"2024-03"},{"sub_level":"148","os_patch_level":"2024-05"},{"sub_level":"153","os_patch_level":"2024-07"},{"sub_level":"158","os_patch_level":"2024-08"},{"sub_level":"167","os_patch_level":"2024-11"},{"sub_level":"170","os_patch_level":"2025-01"},{"sub_level":"178","os_patch_level":"2025-03"},{"sub_level":"180","os_patch_level":"2025-05"},{"sub_level":"185","os_patch_level":"2025-07"},{"sub_level":"189","os_patch_level":"2025-10"},{"sub_level":"194","os_patch_level":"2026-01"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          android14-6.1)
+            echo 'result=[{"sub_level":"25","os_patch_level":"2023-10"},{"sub_level":"43","os_patch_level":"2023-11"},{"sub_level":"57","os_patch_level":"2024-01"},{"sub_level":"68","os_patch_level":"2024-03"},{"sub_level":"75","os_patch_level":"2024-05"},{"sub_level":"78","os_patch_level":"2024-06"},{"sub_level":"84","os_patch_level":"2024-07"},{"sub_level":"90","os_patch_level":"2024-08"},{"sub_level":"93","os_patch_level":"2024-09"},{"sub_level":"99","os_patch_level":"2024-10"},{"sub_level":"112","os_patch_level":"2024-11"},{"sub_level":"115","os_patch_level":"2024-12"},{"sub_level":"118","os_patch_level":"2025-01"},{"sub_level":"124","os_patch_level":"2025-02"},{"sub_level":"128","os_patch_level":"2025-03"},{"sub_level":"129","os_patch_level":"2025-04"},{"sub_level":"134","os_patch_level":"2025-05"},{"sub_level":"138","os_patch_level":"2025-06"},{"sub_level":"141","os_patch_level":"2025-07"},{"sub_level":"145","os_patch_level":"2025-09"},{"sub_level":"157","os_patch_level":"2025-12"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          android15-6.6)
+            echo 'result=[{"sub_level":"30","os_patch_level":"2024-07"},{"sub_level":"30","os_patch_level":"2024-08"},{"sub_level":"46","os_patch_level":"2024-09"},{"sub_level":"50","os_patch_level":"2024-10"},{"sub_level":"56","os_patch_level":"2024-11"},{"sub_level":"57","os_patch_level":"2024-12"},{"sub_level":"58","os_patch_level":"2025-01"},{"sub_level":"66","os_patch_level":"2025-02"},{"sub_level":"77","os_patch_level":"2025-03"},{"sub_level":"82","os_patch_level":"2025-04"},{"sub_level":"87","os_patch_level":"2025-05"},{"sub_level":"89","os_patch_level":"2025-06"},{"sub_level":"92","os_patch_level":"2025-07"},{"sub_level":"98","os_patch_level":"2025-08"},{"sub_level":"98","os_patch_level":"2025-09"},{"sub_level":"102","os_patch_level":"2025-10"},{"sub_level":"118","os_patch_level":"2026-01"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          android16-6.12)
+            echo 'result=[{"sub_level":"23","os_patch_level":"2025-06"},{"sub_level":"30","os_patch_level":"2025-07"},{"sub_level":"38","os_patch_level":"2025-08"},{"sub_level":"38","os_patch_level":"2025-09"},{"sub_level":"58","os_patch_level":"2025-12"}]' >> "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "::error::No sublevel map for ${ANDROID_VER}-${KERNEL_VER} in matrix mode"
+            exit 1
+            ;;
+        esac
+
+  dry-test:
+    needs: [setup]
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    name: "Dry Test ${{ inputs.kernel_version }}.${{ matrix.sub_level }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KSU_VARIANT: ${{ inputs.ksu_variant }}
+      KSU_DIR: KernelSU
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v6
+
+    - name: Setup Repo Tool
+      run: |
+        mkdir -p ~/bin
+        curl -L https://storage.googleapis.com/git-repo-downloads/repo -o ~/bin/repo
+        chmod 0755 ~/bin/repo
+        echo "$HOME/bin" >> "$GITHUB_PATH"
+        git config --global user.name "builder"
+        git config --global user.email "builder@localhost"
+
+    - name: Setup Environment
+      env:
+        ANDROID_VER: ${{ inputs.android_version }}
+        KERNEL_VER: ${{ inputs.kernel_version }}
+        SUB_LEVEL: ${{ matrix.sub_level }}
+        OS_PATCH: ${{ matrix.os_patch_level }}
+      run: |
+        CONFIG="${ANDROID_VER}-${KERNEL_VER}-${SUB_LEVEL}"
+        KERNEL_ROOT="$GITHUB_WORKSPACE/$CONFIG"
+        VERSION_DIR="${ANDROID_VER}-${KERNEL_VER}"
+        mkdir -p "$KERNEL_ROOT"
+
+        {
+          echo "ANDROID_VER=$ANDROID_VER"
+          echo "KERNEL_VER=$KERNEL_VER"
+          echo "OS_PATCH=$OS_PATCH"
+          echo "CONFIG=$CONFIG"
+          echo "KERNEL_ROOT=$KERNEL_ROOT"
+          echo "VERSION_DIR=$VERSION_DIR"
+          echo "DEFCONFIG=$KERNEL_ROOT/common/arch/arm64/configs/gki_defconfig"
+          echo "DEFCONFIG_FRAGMENT=$KERNEL_ROOT/common/arch/arm64/configs/sukisu_gki.fragment"
+        } >> "$GITHUB_ENV"
+
+    - name: Sync Kernel Source
+      working-directory: ${{ env.KERNEL_ROOT }}
+      env:
+        ANDROID_VER: ${{ inputs.android_version }}
+        KERNEL_VER: ${{ inputs.kernel_version }}
+        OS_PATCH: ${{ matrix.os_patch_level }}
+      run: |
+        FORMATTED_BRANCH="${ANDROID_VER}-${KERNEL_VER}-${OS_PATCH}"
+
+        repo init -u https://android.googlesource.com/kernel/manifest \
+          -b "common-${FORMATTED_BRANCH}" --depth=1
+
+        REMOTE_BRANCH=$(git ls-remote https://android.googlesource.com/kernel/common "${FORMATTED_BRANCH}")
+        if grep -q deprecated <<< "$REMOTE_BRANCH"; then
+          sed -i "s/\"${FORMATTED_BRANCH}\"/\"deprecated\/${FORMATTED_BRANCH}\"/g" .repo/manifests/default.xml
+        fi
+
+        repo --trace sync -c -j$(nproc --all) --fail-fast --no-tags --force-sync --no-clone-bundle
+
+    - name: Extract Sublevel
+      env:
+        INPUT_SUB_LEVEL: ${{ matrix.sub_level }}
+      run: |
+        SUBLEVEL="$INPUT_SUB_LEVEL"
+        if [[ -f "$KERNEL_ROOT/common/Makefile" ]]; then
+          EXTRACTED=$(grep '^SUBLEVEL = ' "$KERNEL_ROOT/common/Makefile" | awk '{print $3}')
+          [[ -n "$EXTRACTED" ]] && SUBLEVEL="$EXTRACTED"
+        fi
+        echo "SUBLEVEL=$SUBLEVEL" >> "$GITHUB_ENV"
+
+    - name: Save Pre-Patch State
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        git add .
+        git commit -m "pre-patch baseline" --allow-empty || true
+        echo "PRE_PATCH_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+    - name: Setup KSU Variant
+      working-directory: ${{ env.KERNEL_ROOT }}
+      env:
+        SUKISU_COMMIT: ${{ inputs.sukisu_commit }}
+      run: |
+        case "$KSU_VARIANT" in
+          ReSukiSU)
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s susfs-ksud
+            PIN_FILE="resukisu-pin.txt"
+            ;;
+          KernelSU-Next)
+            curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/stable/kernel/setup.sh" | bash -s stable
+            KSU_DIR="KernelSU-Next"
+            echo "KSU_DIR=$KSU_DIR" >> "$GITHUB_ENV"
+            PIN_FILE="kernelsu-next-pin.txt"
+            ;;
+          WKSU)
+            curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/stable/kernel/setup.sh" | bash -s canary
+            KSU_DIR="Wild_KSU"
+            echo "KSU_DIR=$KSU_DIR" >> "$GITHUB_ENV"
+            PIN_FILE="wksu-pin.txt"
+            ;;
+          *)
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
+            PIN_FILE="sukisu-pin.txt"
+            ;;
+        esac
+        [ -d "$KERNEL_ROOT/$KSU_DIR" ] || { echo "FATAL: $KSU_DIR not created by setup.sh"; exit 1; }
+
+        PIN="${SUKISU_COMMIT:-$(cat "$GITHUB_WORKSPACE/$VERSION_DIR/$PIN_FILE" 2>/dev/null || true)}"
+        if [ -n "$PIN" ]; then
+          cd "$KERNEL_ROOT/$KSU_DIR"
+          git fetch origin
+          git checkout "$PIN"
+          echo "Pinned $KSU_VARIANT to $(git rev-parse --short=7 HEAD)"
+        fi
+
+    - name: Fix Old Kernel Compatibility
+      run: |
+        FIX_SCRIPT="$GITHUB_WORKSPACE/$VERSION_DIR/build-helpers/fix-old-kernel-compat.sh"
+        [ -f "$FIX_SCRIPT" ] && bash "$FIX_SCRIPT" "$KERNEL_ROOT/common" "$SUBLEVEL" || true
+
+    - name: Apply Patches
+      run: |
+        case "$KSU_VARIANT" in
+          ReSukiSU) PATCH_DIR="$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches" ;;
+          KernelSU-Next) PATCH_DIR="$GITHUB_WORKSPACE/$VERSION_DIR/KernelSU-Next/patches" ;;
+          WKSU) PATCH_DIR="$GITHUB_WORKSPACE/$VERSION_DIR/WildKSU/patches" ;;
+          *)        PATCH_DIR="$GITHUB_WORKSPACE/$VERSION_DIR/SukiSU-Ultra/patches" ;;
+        esac
+        RESULTS=""
+
+        PATCH_50="$PATCH_DIR/50_add_susfs_in_gki-${ANDROID_VER}-${KERNEL_VER}.patch"
+        if [ -f "$PATCH_50" ]; then
+          if patch -p1 -F3 --no-backup-if-mismatch -d "$KERNEL_ROOT/common" < "$PATCH_50"; then
+            RESULTS="${RESULTS}50_upstream_susfs|applied\n"
+          else
+            RESULTS="${RESULTS}50_upstream_susfs|FAILED\n"
+          fi
+        else
+          RESULTS="${RESULTS}50_upstream_susfs|skipped (no patch)\n"
+        fi
+
+        PATCH_51="$PATCH_DIR/51_enhanced_susfs-${ANDROID_VER}-${KERNEL_VER}.patch"
+        if [ -f "$PATCH_51" ]; then
+          if patch -p1 -F3 --no-backup-if-mismatch -d "$KERNEL_ROOT/common" < "$PATCH_51"; then
+            RESULTS="${RESULTS}51_enhanced_susfs|applied\n"
+          else
+            RESULTS="${RESULTS}51_enhanced_susfs|FAILED\n"
+          fi
+        else
+          RESULTS="${RESULTS}51_enhanced_susfs|skipped (no patch)\n"
+        fi
+
+        PATCH_70="$PATCH_DIR/70_ksu_safety-${KSU_VARIANT,,}-${KERNEL_VER}.patch"
+        if [ -s "$PATCH_70" ]; then
+          if patch -p1 --no-backup-if-mismatch -d "$KERNEL_ROOT/$KSU_DIR" < "$PATCH_70"; then
+            RESULTS="${RESULTS}70_ksu_safety|applied\n"
+          else
+            RESULTS="${RESULTS}70_ksu_safety|FAILED\n"
+          fi
+        else
+          RESULTS="${RESULTS}70_ksu_safety|skipped (no patch)\n"
+        fi
+
+        PATCH_60="$PATCH_DIR/60_zeromount-${ANDROID_VER}-${KERNEL_VER}.patch"
+        if [ -f "$PATCH_60" ]; then
+          if patch -p1 -F3 --no-backup-if-mismatch -d "$KERNEL_ROOT/common" < "$PATCH_60"; then
+            RESULTS="${RESULTS}60_zeromount|applied\n"
+          else
+            RESULTS="${RESULTS}60_zeromount|FAILED\n"
+          fi
+        else
+          RESULTS="${RESULTS}60_zeromount|skipped (no patch)\n"
+        fi
+
+        echo "PATCH_RESULTS<<EOF" >> "$GITHUB_ENV"
+        echo -e "$RESULTS" >> "$GITHUB_ENV"
+        echo "EOF" >> "$GITHUB_ENV"
+
+        if echo -e "$RESULTS" | grep -q "FAILED"; then
+          echo "::error::One or more patches failed to apply"
+          exit 1
+        fi
+
+    - name: Fix SUSFS Compatibility
+      run: |
+        FIX="$GITHUB_WORKSPACE/$VERSION_DIR/build-helpers/fix-susfs-compat.sh"
+        [ -f "$FIX" ] && bash "$FIX" "$KERNEL_ROOT/common" "$SUBLEVEL" "$ANDROID_VER" "$KERNEL_VER" "" || true
+
+    - name: Scan Patch Rejects
+      if: always()
+      run: |
+        REJECTS_DIR="$GITHUB_WORKSPACE/patch-rejects"
+        mkdir -p "$REJECTS_DIR"
+        mapfile -t REJS < <(find "$KERNEL_ROOT" -type f -name '*.rej')
+        REJ_COUNT=${#REJS[@]}
+        echo "REJ_COUNT=$REJ_COUNT" >> "$GITHUB_ENV"
+        if [ "$REJ_COUNT" -gt 0 ]; then
+          for REJ in "${REJS[@]}"; do
+            REL="${REJ#"$KERNEL_ROOT"/}"
+            DEST="$REJECTS_DIR/$REL"
+            mkdir -p "$(dirname "$DEST")"
+            cp "$REJ" "$DEST"
+            ORIG="${REJ%.rej}"
+            [ -f "$ORIG" ] && cp "$ORIG" "$REJECTS_DIR/${REL%.rej}"
+          done
+        fi
+
+    - name: Configure Kernel
+      working-directory: ${{ env.KERNEL_ROOT }}
+      run: |
+        FRAGMENT="$GITHUB_WORKSPACE/$VERSION_DIR/defconfig.fragment"
+        HELPERS="$GITHUB_WORKSPACE/$VERSION_DIR/build-helpers"
+
+        ASSEMBLE_FLAGS="--susfs --overlayfs"
+        bash "$HELPERS/assemble-defconfig.sh" "$FRAGMENT" "$DEFCONFIG_FRAGMENT" "$DEFCONFIG" $ASSEMBLE_FLAGS
+        bash "$HELPERS/bypass-abi-check.sh" . "$ANDROID_VER" "$KERNEL_VER"
+
+    - name: Clean Module Lists
+      working-directory: ${{ env.KERNEL_ROOT }}
+      run: |
+        HELPERS="$GITHUB_WORKSPACE/$VERSION_DIR/build-helpers"
+        [ -f "$HELPERS/clean-module-list.sh" ] && bash "$HELPERS/clean-module-list.sh" .
+
+    - name: Clean Build Flags
+      working-directory: ${{ env.KERNEL_ROOT }}
+      run: |
+        HELPERS="$GITHUB_WORKSPACE/$VERSION_DIR/build-helpers"
+        bash "$HELPERS/clean-build-flags.sh" . "$KERNEL_VER" "$KSU_VARIANT"
+
+    - name: Compile Full Kernel
+      working-directory: ${{ env.KERNEL_ROOT }}
+      run: |
+        cd common
+
+        export ROOT_DIR="$KERNEL_ROOT"
+        export KERNEL_DIR=common
+
+        # build.config.common references ${CLANG_VERSION} from build.config.constants,
+        # so source constants first to make the variable available for expansion.
+        # shellcheck disable=SC1091
+        source ./build.config.constants
+
+        eval CLANG_BIN="$(grep '^CLANG_PREBUILT_BIN=' build.config.common | cut -d= -f2)"
+        eval TOOLS_BIN="$(grep '^BUILDTOOLS_PREBUILT_BIN=' build.config.common | cut -d= -f2)"
+        eval GAS_BIN="$(grep '^LINUX_GCC_CROSS_COMPILE_PREBUILTS_BIN=' build.config.aarch64 | cut -d= -f2)"
+        export PATH="$ROOT_DIR/$CLANG_BIN:$ROOT_DIR/$TOOLS_BIN:$ROOT_DIR/$GAS_BIN:$PATH"
+
+        if [ ! -x "$ROOT_DIR/$CLANG_BIN/clang" ]; then
+          echo "::error::CLANG_BIN not found at $ROOT_DIR/$CLANG_BIN (CLANG_VERSION=$CLANG_VERSION)"
+          exit 1
+        fi
+
+        if ! command -v ld.lld &>/dev/null; then
+          sudo apt-get install -y -qq lld >/dev/null 2>&1
+        fi
+
+        mkdir -p ../out
+        MAKE="make ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- O=../out"
+
+        echo "::group::make gki_defconfig"
+        $MAKE gki_defconfig -j$(nproc)
+        echo "::endgroup::"
+
+        echo "::group::make Image modules"
+        if $MAKE -j$(nproc) Image modules; then
+          echo "::endgroup::"
+          echo "COMPILE_STATUS=passed (full build)" >> "$GITHUB_ENV"
+        else
+          echo "::endgroup::"
+          echo "::error::Full kernel compile FAILED"
+          echo "COMPILE_STATUS=FAILED" >> "$GITHUB_ENV"
+          exit 1
+        fi
+
+    - name: Upload Rejects
+      if: always() && env.REJ_COUNT > 0
+      uses: actions/upload-artifact@v7
+      with:
+        name: dry-test-${{ inputs.kernel_version }}.${{ env.SUBLEVEL }}-rejects
+        path: patch-rejects/
+        if-no-files-found: ignore
+        compression-level: 9
+
+    - name: Job Summary
+      if: always()
+      run: |
+        {
+          echo "## Dry Test: ${ANDROID_VER} ${KERNEL_VER}.${SUBLEVEL} (${OS_PATCH})"
+          echo ""
+          echo "| Check | Result |"
+          echo "|-------|--------|"
+          echo -e "$PATCH_RESULTS" | while IFS='|' read -r name result; do
+            [ -z "$name" ] && continue
+            echo "| $name | $result |"
+          done
+          echo "| **compile** | ${COMPILE_STATUS:-not run} |"
+          echo ""
+          echo "**Rejects:** ${REJ_COUNT:-0}"
+          echo ""
+          echo "**SukiSU variant:** $KSU_VARIANT"
+        } >> "$GITHUB_STEP_SUMMARY"
